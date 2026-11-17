@@ -18,7 +18,11 @@ names (fn_XXXXXXXX, dtor_XXXXXXXX), when B has no symbol of that name yet.
 It names B's objects (lbl_XXXXXXXX) the same way: those functions reach
 data at the same places in their code (through r2, r13 or lis), which pairs
 an object of A with one of B when every such place agrees. An address of A
-at the end of a name becomes B's (or is dropped).
+at the end of a name becomes B's (or B's own address); one inside a name
+(CGameCoin_8012B944_rodata_8031AB30) becomes B's, and a name with one that
+is not paired is skipped. With --rename-differing too, B's functions that
+already have other names get A's (not names hand-written code uses), to
+carry over corrections made in A.
 
     python tools/crossmatch.py orig/GGPE02/sys/main.dol games/mkgp2/config/symbols.txt \\
                                orig/GGPE01/sys/main.dol games/mkgp1/config/symbols.txt 80289B54
@@ -40,6 +44,7 @@ SYMBOL_LINE = re.compile(r'^(?P<name>"[^"]*"|\S+) = (?P<sec>[^:;\s]+):0x(?P<addr
 GENERATED = re.compile(r"^(fn|dtor|lbl)_[0-9A-F]{8}$")
 IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 ADDRESS_SUFFIX = re.compile(r"^(?P<base>\w+?)_(?P<hex>[0-9A-F]{8})$")
+EMBEDDED_ADDRESS = re.compile(r"(?<=[A-Za-z_])(8[0-9A-F]{7})(?=_)")
 
 
 class Dol:
@@ -125,7 +130,7 @@ def data_references(dol: Dol, address: int, size: int, bases: dict[int, int]) ->
     return refs
 
 
-def apply_names(pairs, dols, functions, symbols) -> None:
+def apply_names(pairs, dols, functions, symbols, rename_differing: bool = False) -> None:
     """Gives B's generated names A's names: the functions in `pairs` (A's
     address and name, B's), and the objects they reach at the same places in
     their code, when every such place agrees."""
@@ -160,35 +165,57 @@ def apply_names(pairs, dols, functions, symbols) -> None:
         m = SYMBOL_LINE.match(line)
         if m:
             used.add(m["name"].strip('"'))
-            line_of.setdefault(int(m["addr"], 16), i)
+            if "type:label" not in m["rest"]:  # a label can share a function's address
+                line_of.setdefault(int(m["addr"], 16), i)
     renamed = [0, 0]
+    differing: list[tuple[str, str, bool]] = []  # old name, new name, renamed
     reserved = handwritten_names()
     used |= reserved
+    functions_b = {address for address, _, _ in functions[1]}
+
+    def base(text: str) -> str:
+        m = ADDRESS_SUFFIX.match(text)
+        return m["base"] if m else text
+
     for address, name in renames:
-        if GENERATED.match(name) or not IDENTIFIER.match(name) or not GENERATED.match(names_b[address]):
-            continue
-        if names_b[address] in reserved:  # hand-written code uses this name
+        if GENERATED.match(name) or not IDENTIFIER.match(name) or names_b[address] in reserved:
             continue
         m = ADDRESS_SUFFIX.match(name)
         if m and int(m["hex"], 16) in address_map:  # names ending in an address of A (Stub_NoOp_8012161C)
             name = f"{m['base']}_{address_map[int(m['hex'], 16)]:08X}"
         elif m:
             name = f"{m['base']}_{address:08X}"
-        if name in used:
+        inside = [int(e[1], 16) for e in EMBEDDED_ADDRESS.finditer(name)]
+        if any(value not in address_map for value in inside):
             continue
+        name = EMBEDDED_ADDRESS.sub(lambda e: f"{address_map[int(e[1], 16)]:08X}", name)
+        already = not GENERATED.match(names_b[address])
+        # Already named: only functions, with --rename-differing, and not
+        # where the names differ only by an address at the end.
+        if already and not (rename_differing and address in functions_b and base(name) != base(names_b[address])):
+            continue
+        if name in used:
+            if already:
+                differing.append((names_b[address], name, False))
+            continue
+        if already:
+            differing.append((names_b[address], name, True))
         m = SYMBOL_LINE.match(lines[line_of[address]])
         lines[line_of[address]] = f"{name} = {m['sec']}:0x{m['addr']};{m['rest']}"
         used.add(name)
-        renamed["type:object" in m["rest"]] += 1
+        renamed["type:object" in m["rest"]] += not already
     # newline="\n": keep LF line endings on Windows (decomp-toolkit writes LF).
     with open(symbols[1], "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
     print(f"named {renamed[0]} functions and {renamed[1]} objects in {symbols[1]}")
+    for old, new, done in differing:
+        print(f"  renamed: {old} -> {new}" if done else f"  not renamed (name in use): {old} -> {new}")
 
 
 def main(argv: list[str]) -> int:
     apply = "--apply" in argv
-    argv = [a for a in argv if a != "--apply"]
+    rename_differing = "--rename-differing" in argv
+    argv = [a for a in argv if a not in ("--apply", "--rename-differing")]
     if len(argv) < 4:
         print(__doc__)
         return 2
@@ -199,7 +226,7 @@ def main(argv: list[str]) -> int:
     by_key_b, _ = index(dol_b, functions_b)
     if apply:
         pairs = [(v[0], by_key_b[k][0]) for k, v in by_key_a.items() if len(v) == 1 and len(by_key_b.get(k, [])) == 1]
-        apply_names(pairs, (dol_a, dol_b), (functions_a, functions_b), (argv[1], argv[3]))
+        apply_names(pairs, (dol_a, dol_b), (functions_a, functions_b), (argv[1], argv[3]), rename_differing)
         return 0
     if len(argv) > 4:
         names = {address: name for address, _, name in functions_a}

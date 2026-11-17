@@ -90,7 +90,7 @@ settings block), the same object here is split the same way. With a clone of the
 `gp2decomp/` (gitignored):
 
 ```sh
-python tools/decompnames.py gp2decomp/mkgp2-decomp/config/GNLJ82/symbols.txt games/mkgp2/config/symbols.txt --apply
+python tools/decompnames.py gp2decomp/mkgp2-decomp/config/GNLJ82/symbols.txt games/mkgp2/config/symbols.txt --rename-differing --apply
 ```
 
 GP has no decomp. `tools/crossmatch.py --apply` gives it GP 2's names for the functions whose
@@ -99,15 +99,27 @@ their code:
 
 ```sh
 python tools/crossmatch.py orig/GGPE02/sys/main.dol games/mkgp2/config/symbols.txt \
-                           orig/GGPE01/sys/main.dol games/mkgp1/config/symbols.txt --apply
+                           orig/GGPE01/sys/main.dol games/mkgp1/config/symbols.txt --apply --rename-differing
 ```
 
 Both only rename generated names (`fn_XXXXXXXX`, `dtor_XXXXXXXX`, `lbl_XXXXXXXX`), and keep
-names that are already taken; run them again as the decomp names more. Renaming objects does not
-change the generated code. Splitting one does: the recompiler bounds jump tables by their
+names that are already taken; run them again as the decomp names more. With
+`--rename-differing`, they also give functions that already have other names the decomp's (or
+GP 2's), which picks up the decomp's own renames and corrects signature matches (its code is
+matched against the original); names hand-written code uses are kept.
+
+Where one release has merged or split objects the other has not (an 8-byte time in two 4-byte
+halves), pairing objects by size can slip, so `decompnames.py` keeps a pair of objects only if
+its two addresses are as far apart as the releases are around it (the distance in the runs of
+at least 8 pairs of the same sizes before or after it), and pairs objects left over by that
+distance. Addresses inside the decomp's names (`CGameCoin_8012BF5C_rodata_80317060`) are the
+Japanese release's and become this release's; a name with one that is no symbol's here is
+skipped, and so are the decomp's placeholder names for unnamed data (`rodata_803175A0_...`,
+`pad_...`). `DECOMP_FIXES` in the script corrects the decomp where it is wrong.
+
+Renaming objects does not change the generated code. Splitting one does: the recompiler bounds jump tables by their
 objects' sizes, so rebuild and play after a split. The decomp's names are its authors'
-reading of the code, so they are a guide rather than a fact. Where it names an SDK function
-differently, the name from `sigmatch.py` is kept.
+reading of the code, so they are a guide rather than a fact.
 
 ## Working with Claude Code
 

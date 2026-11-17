@@ -1,3 +1,15 @@
+## 1.0.5 (17/11/2026)
+
+This release pulls in the latest changes from [mkgp2-decomp](https://github.com/naari3/mkgp2-decomp), the GP 2 decompilation. Thank you to naari3 and everyone working on it! Thousands more of the games' functions and data now have names, which makes hang reports easier to read and the code easier to work on. No gameplay changes.
+
+- Updated the game's names from the latest [mkgp2-decomp](https://github.com/naari3/mkgp2-decomp) (CC0): GP 2 now has 4,296 of its 7,612 functions and 5,794 of its data objects named (up from 3,427 and 488). Most of the new data names say which part of the game the data belongs to rather than what it is. Hang reports and status backtraces show the new names
+- GP 1 picks up GP 2's new names wherever the two games share code: 1,560 functions and 1,269 data objects (up from 1,021 and 77)
+- 34 GP 2 functions named earlier by signature matching or by older decomp names now use the decomp's names, which are checked against the game's code (for example `GX_SetNumTevStages` is now `GXSetNumTexGens` and `dGeomDisable` is now `sndConvertMs`). GP 1 gets the same corrections for the 27 of these functions it shares
+- 48 GP 2 data objects are split into their named parts, as the decomp has them. This changes the recompiled code slightly (the recompiler bounds jump tables by object size); both games have been rebuilt and played through a race
+- `tools/decompnames.py`: data is paired only where its address agrees with the distance between the two releases there, which stops names landing on the wrong object where the releases lay data out differently. Addresses inside the decomp's names are converted to the US release's (names that can't be converted are skipped), the decomp's placeholder names for unnamed data are skipped, and a list of fixes corrects names the decomp has wrong (`GXGetCPUFifo`)
+- `tools/decompnames.py` and `tools/crossmatch.py`: the new `--rename-differing` option replaces existing function names with the decomp's or GP 2's (names used by OpenGP's own code are kept)
+- `tools/crossmatch.py` no longer renames a label that shares its address with a function instead of the function, and converts addresses inside names
+
 ## 1.0.4 (12/11/2026)
 
 - GP 2: the brake goes back through this play's menu screens to change a class, character, kart, cup, course or round. **Brake goes back** is on by default in the Game tab and can be turned off.
