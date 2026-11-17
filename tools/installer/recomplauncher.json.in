@@ -1,0 +1,198 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "OpenGP",
+  "repo": "OpenGP-dev/OpenGP",
+  "game": {
+    "kind": "iso",
+    "label": "Your disc image (.iso or .gcm) of Mario Kart Arcade GP 2, the USA release (GGPE02). A compressed image (.rvz, .gcz, .ciso) must be converted to .iso in Dolphin first.",
+    "check": { "ids": ["GGPE02", "RELSAB"] }
+  },
+  "prepare": {
+    "program": ["opengp-cli.exe", "opengp-cli"],
+    "args": ["--prepare", "--only", "GGPE02", "{game}"],
+    "label": "Building the game from your disc (once per OpenGP version). On Windows the first build downloads the compiler, about 190 MB.",
+    "timeout": 3600,
+    "version": "@PROJECT_VERSION@"
+  },
+  "start": {
+    "program": ["opengp-mkgp2.exe", "opengp-mkgp2"],
+    "args": ["--iso", "{game}"]
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "toml",
+      "file": [{ "path": "{install}/user/settings.toml" }]
+    }
+  ],
+  "saves": [
+    "{install}/user/tribackup_*.bin",
+    "{install}/user/cards",
+    "{install}/user/settings.toml",
+    "{install}/user/controls.toml"
+  ],
+  "folders": {
+    "saves": [{ "path": "{install}/user" }],
+    "screenshots": [{ "path": "{install}/user/screenshots" }]
+  },
+  "settings": [
+    {
+      "id": "window", "label": "Window", "group": "Video",
+      "help": "Fullscreen fills your screen. F11 or Alt+Enter switches in the game.",
+      "choices": [
+        { "label": "Windowed", "set": { "video/fullscreen": "false" } },
+        { "label": "Fullscreen", "set": { "video/fullscreen": "true" } }
+      ],
+      "defaults": { "video/fullscreen": "false" }
+    },
+    {
+      "id": "window_size", "label": "Window size", "group": "Video",
+      "help": "The window's size when not fullscreen, at 100% display scale.",
+      "choices": [
+        { "label": "1280 x 720", "set": { "video/window_width": "1280", "video/window_height": "720" } },
+        { "label": "1600 x 900", "set": { "video/window_width": "1600", "video/window_height": "900" } },
+        { "label": "1920 x 1080", "set": { "video/window_width": "1920", "video/window_height": "1080" } },
+        { "label": "960 x 720 (4:3)", "set": { "video/window_width": "960", "video/window_height": "720" } }
+      ],
+      "defaults": { "video/window_width": "1280", "video/window_height": "720", "video/fullscreen": "false" },
+      "when": { "video/fullscreen": "false" }
+    },
+    {
+      "id": "aspect", "label": "Aspect ratio", "group": "Video",
+      "help": "Wider than 4:3 shows more of the course at the sides. Automatic follows the window's shape.",
+      "choices": [
+        { "label": "Automatic", "set": { "video/aspect_ratio": "\"auto\"" } },
+        { "label": "4:3 (the cabinet's)", "set": { "video/aspect_ratio": "\"4:3\"" } },
+        { "label": "16:9", "set": { "video/aspect_ratio": "\"16:9\"" } },
+        { "label": "16:10", "set": { "video/aspect_ratio": "\"16:10\"" } },
+        { "label": "21:9", "set": { "video/aspect_ratio": "\"21:9\"" } }
+      ],
+      "defaults": { "video/aspect_ratio": "\"auto\"" }
+    },
+    {
+      "id": "resolution", "label": "Resolution", "group": "Video",
+      "help": "What the game draws at, in times the cabinet's own picture. Match the window picks the size for your screen; higher needs a faster graphics card.",
+      "choices": [
+        { "label": "Match the window", "set": { "video/internal_resolution": "0" } },
+        { "label": "1x (the cabinet's)", "set": { "video/internal_resolution": "1" } },
+        { "label": "2x", "set": { "video/internal_resolution": "2" } },
+        { "label": "3x", "set": { "video/internal_resolution": "3" } },
+        { "label": "4x", "set": { "video/internal_resolution": "4" } },
+        { "label": "6x", "set": { "video/internal_resolution": "6" } },
+        { "label": "8x", "set": { "video/internal_resolution": "8" } }
+      ],
+      "defaults": { "video/internal_resolution": "0" }
+    },
+    {
+      "id": "vsync", "label": "V-Sync", "group": "Video",
+      "help": "Waits for your screen's refresh, so the picture never tears. The game always runs at 60 FPS, as on the cabinet.",
+      "choices": [
+        { "label": "On", "set": { "video/vsync": "true" } },
+        { "label": "Off", "set": { "video/vsync": "false" } }
+      ],
+      "defaults": { "video/vsync": "true" }
+    },
+    {
+      "id": "even_pacing", "label": "Even frame pacing", "group": "Video",
+      "help": "Shows each frame on the game's own 60 Hz tick, as the cabinet's screen does: smoother on FreeSync and G-Sync screens, about half a frame later.",
+      "choices": [
+        { "label": "Off", "set": { "video/even_pacing": "false" } },
+        { "label": "On", "set": { "video/even_pacing": "true" } }
+      ],
+      "defaults": { "video/even_pacing": "false" }
+    },
+    {
+      "id": "volume", "label": "Volume", "group": "Sound",
+      "help": "The game's volume, in percent.",
+      "slider": { "key": "audio/volume", "min": 0, "max": 100, "step": 5, "format": "%d" },
+      "defaults": { "audio/volume": "100" }
+    },
+    {
+      "id": "free_play", "label": "Free play", "group": "Game",
+      "help": "Play without inserting coins.",
+      "choices": [
+        { "label": "Off", "set": { "game/free_play": "false" } },
+        { "label": "On", "set": { "game/free_play": "true" } }
+      ],
+      "defaults": { "game/free_play": "false" }
+    },
+    {
+      "id": "brake_goes_back", "label": "Brake goes back", "group": "Game",
+      "help": "The brake goes back a screen in the game's menus, to change your character, kart or cup. Off in linked games.",
+      "choices": [
+        { "label": "On", "set": { "game/brake_goes_back": "true" } },
+        { "label": "Off", "set": { "game/brake_goes_back": "false" } }
+      ],
+      "defaults": { "game/brake_goes_back": "true" }
+    },
+    {
+      "id": "pause_in_menu", "label": "Pause in the menu", "group": "Game",
+      "help": "The game pauses while OpenGP's menu (Esc) is open. Never in linked games.",
+      "choices": [
+        { "label": "On", "set": { "game/pause_in_menu": "true" } },
+        { "label": "Off", "set": { "game/pause_in_menu": "false" } }
+      ],
+      "defaults": { "game/pause_in_menu": "true" }
+    },
+    {
+      "id": "pause_in_background", "label": "Pause in the background", "group": "Game",
+      "help": "The game pauses while its window isn't the one in front. Never in linked games.",
+      "choices": [
+        { "label": "Off", "set": { "game/pause_in_background": "false" } },
+        { "label": "On", "set": { "game/pause_in_background": "true" } }
+      ],
+      "defaults": { "game/pause_in_background": "false" }
+    },
+    {
+      "id": "camera", "label": "Camera", "group": "Game",
+      "help": "The cabinet's camera takes the players' photos. Webcam uses yours; Test shows colour bars.",
+      "choices": [
+        { "label": "Off", "set": { "camera/source": "\"off\"" } },
+        { "label": "Webcam", "set": { "camera/source": "\"webcam\"" } },
+        { "label": "Test pattern", "set": { "camera/source": "\"test\"" } }
+      ],
+      "defaults": { "camera/source": "\"off\"" }
+    },
+    {
+      "id": "rich_presence", "label": "Discord status", "group": "Game",
+      "help": "Shows your character, cup, course and place on your Discord profile while Discord runs.",
+      "choices": [
+        { "label": "On", "set": { "discord/rich_presence": "true" } },
+        { "label": "Off", "set": { "discord/rich_presence": "false" } }
+      ],
+      "defaults": { "discord/rich_presence": "true" }
+    },
+    {
+      "id": "cabinet", "label": "Cabinet number", "group": "Linked cabinets",
+      "help": "For linked races, give each OpenGP its own number. Game's own uses the number set in the game's test menu.",
+      "choices": [
+        { "label": "Game's own", "set": { "link/cabinet": "0" } },
+        { "label": "1", "set": { "link/cabinet": "1" } },
+        { "label": "2", "set": { "link/cabinet": "2" } },
+        { "label": "3", "set": { "link/cabinet": "3" } },
+        { "label": "4", "set": { "link/cabinet": "4" } }
+      ],
+      "defaults": { "link/cabinet": "0" }
+    },
+    {
+      "id": "lan", "label": "Link over the network", "group": "Linked cabinets",
+      "help": "Also links with OpenGP on other computers on your local network, not only on this one.",
+      "choices": [
+        { "label": "Off", "set": { "link/lan": "false" } },
+        { "label": "On", "set": { "link/lan": "true" } }
+      ],
+      "defaults": { "link/lan": "false" }
+    }
+  ],
+  "groups": [
+    { "id": "Video" },
+    { "id": "Sound" },
+    { "id": "Game" },
+    { "id": "Linked cabinets", "advanced": true }
+  ],
+  "actions": [
+    { "id": "saves", "label": "Saves and settings", "help": "Your Mario Cards, the game's records, settings and controls.", "open": "saves" },
+    { "id": "screenshots", "label": "Screenshots", "help": "The screenshots you've taken in the game.", "open": "screenshots" }
+  ]
+}

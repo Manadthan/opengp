@@ -95,6 +95,17 @@ opengp-cli [IMAGE...] [--force] [--jobs N] [--cxx COMPILER] [--keep-build]
 - `--cxx COMPILER` uses this C++ compiler instead of the package's.
 - `--keep-build` keeps the generated C++ and the object files in `build/<game ID>/`. The installer
   deletes them once the game is built otherwise.
+- `--only ID` builds only that game (`GGPE02` or `GGPE01`). An image of the other game is an error.
+- `--prepare` is for other launchers: it prints its progress as `progress <0 to 1> <text>` lines
+  and never waits for a key at the end.
+
+### RecompLauncher
+
+The package carries a `recomplauncher.json`, which tells [RecompLauncher](https://recomplauncher.com)
+how to set OpenGP up: the player picks their GP 2 disc image, RecompLauncher runs
+`opengp-cli --prepare --only GGPE02 <image>` to build the game, and Play starts `opengp-mkgp2`
+with `--iso <image>`. OpenGP's settings show on the game's page there, and RecompLauncher edits
+`user/settings.toml` before each start. Each new version of OpenGP builds the game again.
 
 ## The compiler
 
