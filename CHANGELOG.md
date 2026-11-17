@@ -1,3 +1,12 @@
+## 1.0.6 (17/11/2026)
+
+OpenGP can now be installed and played from [RecompLauncher](https://recomplauncher.com/game/opengp): pick your GP 2 disc image there, and it builds the game and starts it, with OpenGP's settings on the game's page. No gameplay changes.
+
+- The package carries a `recomplauncher.json`. RecompLauncher asks for your Mario Kart Arcade GP 2 disc image (GGPE02), builds the game from it, and starts it with Play. Each new version of OpenGP builds the game again there. GP 1 is built and played from OpenGP's own launcher, as before
+- OpenGP's settings show on the game's page in RecompLauncher: window, window size, aspect ratio, resolution, V-Sync, even frame pacing, volume, free play, brake goes back, pausing, camera, Discord status and linked cabinets. RecompLauncher's save backups pick up your Mario Cards, the game's records, settings and controls
+- `opengp-cli --only ID` builds just that game; an image of the other game is refused, with a message naming it. `opengp-cli --prepare` prints its progress as `progress <0..1> <text>` lines for other launchers, and doesn't wait for a key at the end
+- The README has a "Get it on RecompLauncher" badge
+
 ## 1.0.5 (17/11/2026)
 
 This release pulls in the latest changes from [mkgp2-decomp](https://github.com/naari3/mkgp2-decomp), the GP 2 decompilation. Thank you to naari3 and everyone working on it! Thousands more of the games' functions and data now have names, which makes hang reports easier to read and the code easier to work on. No gameplay changes.

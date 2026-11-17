@@ -156,3 +156,10 @@ install(FILES ${PROJECT_SOURCE_DIR}/thirdparty/qt/third-party.txt DESTINATION li
 # All of them: the player's pages link to the others.
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/docs/ DESTINATION docs FILES_MATCHING PATTERN "*.md")
 install(FILES ${PROJECT_SOURCE_DIR}/tools/installer/ISO-README.txt DESTINATION ISO RENAME README.txt)
+
+# How RecompLauncher (recomplauncher.com) sets the package up, next to the
+# launcher. Its setup step is versioned with the package: each version builds
+# the game again.
+configure_file(${PROJECT_SOURCE_DIR}/tools/installer/recomplauncher.json.in
+               ${CMAKE_BINARY_DIR}/package/recomplauncher.json @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/package/recomplauncher.json DESTINATION .)

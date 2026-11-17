@@ -1,5 +1,7 @@
 # OpenGP
 
+<a href="https://recomplauncher.com/game/opengp"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
 OpenGP is a **native PC port of Mario Kart Arcade GP and Mario Kart Arcade GP 2**
 (Namco, 2005 and 2007, Triforce arcade hardware). It is built by **static recompilation**, the
 same approach as [Zelda64Recomp](https://github.com/Zelda64Recomp/Zelda64Recomp) and
@@ -62,6 +64,10 @@ Download the launcher package for Windows, Linux or macOS (Apple Silicon) from t
 unpack it and open `OpenGP`, the launcher. Add your disc image of each game: OpenGP builds the games
 on your machine from your images, then plays them (see [docs/packaging.md](docs/packaging.md) and
 [docs/playing.md](docs/playing.md)). On the command line, `opengp-cli` builds them the same way.
+
+[RecompLauncher](https://recomplauncher.com/game/opengp) can also install and update OpenGP,
+build GP 2 from your disc image and start it, with OpenGP's settings on the game's page. GP 1 is
+built and played from OpenGP's own launcher in the same folder.
 
 ## Building
 
