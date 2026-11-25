@@ -14,7 +14,17 @@
 #include "status.h"
 #include "ppc_recomp_shared.h"
 
+#ifdef __ANDROID__
+// Android: SDL's activity loads libmain.so and calls SDL_main (main, renamed).
+#include <SDL3/SDL_main.h>
+
+#include "app/android.h"
+#endif
+
 int main(int argc, char** argv) {
+#ifdef __ANDROID__
+  app::android_init();
+#endif
   app::Game game;
   game.id = OPENGP_GAME_ID;
   game.title = OPENGP_GAME_TITLE;

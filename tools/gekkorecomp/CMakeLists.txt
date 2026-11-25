@@ -8,8 +8,16 @@ add_library(gekkorecomp_lib STATIC
 target_include_directories(gekkorecomp_lib PUBLIC lib)
 target_link_libraries(gekkorecomp_lib PUBLIC gekko_isa opengp_utf8 PRIVATE tomlplusplus opengp_warnings)
 
-add_executable(gekkorecomp main.cpp)
-target_link_libraries(gekkorecomp PRIVATE gekkorecomp_lib opengp_warnings)
+# Cross builds (Android) run a gekkorecomp built for the build machine:
+# OPENGP_GEKKORECOMP is its path (scripts/build_android.sh builds it).
+set(OPENGP_GEKKORECOMP "" CACHE FILEPATH "A gekkorecomp built for the build machine, for cross builds")
+if(OPENGP_GEKKORECOMP)
+  add_executable(gekkorecomp IMPORTED GLOBAL)
+  set_target_properties(gekkorecomp PROPERTIES IMPORTED_LOCATION ${OPENGP_GEKKORECOMP})
+else()
+  add_executable(gekkorecomp main.cpp)
+  target_link_libraries(gekkorecomp PRIVATE gekkorecomp_lib opengp_warnings)
+endif()
 
 # opengp_recompile(<target> CONFIG <recomp.toml> FILE_COUNT <n> OUTPUT_DIR <dir>
 #                  [DOL <path>] [SYMBOLS <path>] [DEPENDS ...])

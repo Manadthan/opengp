@@ -1,0 +1,54 @@
+// The native libraries (libmain.so: the game, recompiled from the player's own
+// main.dol; libSDL3.so; libc++_shared.so) are built by scripts/build_android.sh
+// into build/android-libs, and SDL's Java side comes from the SDL release the
+// CMake build fetched. Neither is committed: the game's code never is.
+plugins {
+    id 'com.android.application'
+}
+
+def prop = { String name, String fallback -> project.hasProperty(name) ? project.property(name) : fallback }
+def repoRoot = rootProject.projectDir.parentFile
+def nativeLibs = prop('opengpNativeLibs', new File(repoRoot, 'build/android-libs').path)
+def sdlJava = prop('opengpSdlJava', new File(repoRoot, 'build/android/_deps/sdl3-src/android-project/app/src/main/java').path)
+
+android {
+    namespace 'org.opengp.android'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'org.opengp.android'
+        minSdk 29
+        targetSdk 35
+        versionCode Integer.parseInt(prop('opengpVersionCode', '1'))
+        versionName prop('opengpVersionName', 'dev')
+        ndk { abiFilters 'arm64-v8a' }
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += [sdlJava]
+            jniLibs.srcDirs = [nativeLibs]
+        }
+    }
+
+    packagingOptions {
+        jniLibs {
+            useLegacyPackaging true
+            keepDebugSymbols += ['**/*.so']  // already stripped by the build script
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug  // for the player's own device only
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint { abortOnError false; checkReleaseBuilds false }
+}

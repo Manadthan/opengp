@@ -3,6 +3,7 @@
 #include "app/paths.h"
 
 #include <chrono>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -46,7 +47,9 @@ toml::table read_images(const fs::path& user_dir) {
 }  // namespace
 
 fs::path executable_dir() {
-#ifdef _WIN32
+#ifdef __ANDROID__
+  return home_dir();  // the process is the app's (app_process); its files are in OPENGP_HOME
+#elif defined(_WIN32)
   std::vector<wchar_t> buf(MAX_PATH);
   for (;;) {
     const DWORD n = GetModuleFileNameW(nullptr, buf.data(), static_cast<DWORD>(buf.size()));
@@ -103,7 +106,11 @@ bool lock_user_dir(const fs::path& user_dir, const std::string& game_id) {
 }
 
 fs::path home_dir() {
-#ifdef OPENGP_PACKAGE
+#ifdef __ANDROID__
+  // The app's external files folder (set by runtime/app/android.cpp).
+  const char* home = std::getenv("OPENGP_HOME");
+  return home ? os::utf8_path(home) : fs::current_path();
+#elif defined(OPENGP_PACKAGE)
   return executable_dir();
 #else
   return os::utf8_path(OPENGP_SOURCE_DIR);

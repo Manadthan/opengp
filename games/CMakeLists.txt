@@ -90,7 +90,14 @@ function(opengp_game dir)
   opengp_generated_code_options(${dir}_recomp)
 
   list(TRANSFORM OPENGP_GAME_OWN_SOURCES PREPEND ${src}/ OUTPUT_VARIABLE own_sources)
-  add_executable(${executable} ${own_sources} ${OPENGP_GAMES_COMMON})
+  if(ANDROID)
+    # Android: libmain.so, which SDL's activity loads and calls SDL_main in.
+    add_library(${executable} SHARED ${own_sources} ${OPENGP_GAMES_COMMON})
+    set_target_properties(${executable} PROPERTIES OUTPUT_NAME main)
+    target_link_libraries(${executable} PRIVATE android log)
+  else()
+    add_executable(${executable} ${own_sources} ${OPENGP_GAMES_COMMON})
+  endif()
   target_link_libraries(${executable} PRIVATE ${dir}_recomp opengp_app opengp_warnings)
   target_include_directories(${executable} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/common)
   target_compile_definitions(${executable} PRIVATE
@@ -98,8 +105,10 @@ function(opengp_game dir)
     OPENGP_GAME_TITLE="${title}"
     OPENGP_DOL_SHA1="${dol_sha1}"
     OPENGP_SYMBOLS="${src}/config/symbols.txt")
-  set_target_properties(${executable} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${bin})
+  set_target_properties(${executable} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${bin} LIBRARY_OUTPUT_DIRECTORY ${bin})
 endfunction()
 
 opengp_game(mkgp2)  # Mario Kart Arcade GP 2 (USA, GGPE02): the main game
-opengp_game(mkgp1)  # Mario Kart Arcade GP (USA, GGPE01)
+if(NOT ANDROID)  # Android: one game per APK (libmain.so), GP 2
+  opengp_game(mkgp1)  # Mario Kart Arcade GP (USA, GGPE01)
+endif()

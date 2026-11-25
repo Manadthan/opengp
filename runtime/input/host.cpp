@@ -431,7 +431,18 @@ struct HostInput::Impl {
     bool wheel = false;  // SDL says it is a steering wheel
     float sent[3] = {-2.0f, -2.0f, -2.0f};  // the spring, friction and roll last sent
     int axes = 0, buttons = 0, hats = 0;
+#ifdef __ANDROID__
+    // Diagnostics (the Android journal's controller section): which half of
+    // each raw axis, and which raw buttons, were last seen; and whether the
+    // gamepad's triggers ever moved as axes (else L2/R2 come as buttons).
+    signed char axis_side[16] = {};
+    bool button_down[32] = {};
+    bool trigger_axis_seen = false;
+#endif
   };
+#ifdef __ANDROID__
+  int diag_lines = 0;  // bounded, so a stuck input cannot fill the log
+#endif
 
   Config config;
   std::string path;
@@ -635,6 +646,15 @@ void HostInput::Impl::open(SDL_JoystickID id) {
   d.hats = SDL_GetNumJoystickHats(d.joystick);
   const char* name = d.gamepad ? SDL_GetGamepadName(d.gamepad) : SDL_GetJoystickName(d.joystick);
   std::fprintf(stderr, "[input] %s connected: %s\n", d.gamepad ? "gamepad" : "joystick", name ? name : "?");
+#ifdef __ANDROID__
+  {
+    char* mapping = d.gamepad ? SDL_GetGamepadMapping(d.gamepad) : nullptr;
+    std::fprintf(stderr, "[input diag] device \"%s\" vid %04x pid %04x: %d axes, %d buttons, %d hats; mapping: %s\n",
+                 name ? name : "?", SDL_GetJoystickVendor(d.joystick), SDL_GetJoystickProduct(d.joystick), d.axes,
+                 d.buttons, d.hats, mapping ? mapping : "(none)");
+    SDL_free(mapping);
+  }
+#endif
   d.haptic = SDL_OpenHapticFromJoystick(d.joystick);
   if (d.haptic) start_effects(d);
   devices[id] = d;
@@ -773,6 +793,42 @@ triforce::Controls HostInput::poll() {
   };
   gather(m.config.keyboard, nullptr);
   for (const auto& [id, d] : m.devices) gather(d.gamepad ? m.config.gamepad : m.config.joystick, &d);
+#ifdef __ANDROID__
+  // Diagnostics, and L2/R2 as buttons: some Android controllers send their
+  // triggers as key presses (SDL's raw buttons 15 and 16) and never as axes.
+  for (auto& [id, d] : m.devices) {
+    const int axes = std::min(d.axes, 16);
+    for (int a = 0; a < axes; ++a) {
+      const int v = SDL_GetJoystickAxis(d.joystick, a);
+      const signed char side = v > 16384 ? 1 : v < -16384 ? -1 : 0;
+      if (side != d.axis_side[a] && m.diag_lines < 400) {
+        ++m.diag_lines;
+        std::fprintf(stderr, "[input diag] raw axis%d %s (%d)\n", a, side > 0 ? "+half" : side < 0 ? "-half" : "centre", v);
+      }
+      d.axis_side[a] = side;
+    }
+    const int buttons = std::min(d.buttons, 32);
+    for (int b = 0; b < buttons; ++b) {
+      const bool down = SDL_GetJoystickButton(d.joystick, b);
+      if (down && !d.button_down[b] && m.diag_lines < 400) {
+        ++m.diag_lines;
+        std::fprintf(stderr, "[input diag] raw button%d down\n", b);
+      }
+      d.button_down[b] = down;
+    }
+    if (!d.gamepad) continue;
+    const int lt = SDL_GetGamepadAxis(d.gamepad, SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
+    const int rt = SDL_GetGamepadAxis(d.gamepad, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER);
+    if (!d.trigger_axis_seen && (lt > 8192 || rt > 8192)) {
+      d.trigger_axis_seen = true;
+      std::fprintf(stderr, "[input diag] gamepad triggers move as axes (lt %d, rt %d)\n", lt, rt);
+    }
+    if (!d.trigger_axis_seen && d.buttons > 16) {
+      if (SDL_GetJoystickButton(d.joystick, 15)) amount[kBrake] = 1.0f;
+      if (SDL_GetJoystickButton(d.joystick, 16)) amount[kGas] = 1.0f;
+    }
+  }
+#endif
 
   // Digital steering (and half axes) turns gradually, and recentres faster.
   const float target = amount[kSteerRight] - amount[kSteerLeft];

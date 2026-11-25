@@ -584,7 +584,7 @@ class Network::Link {
     DWORD bytes = 0;
     WSAIoctl(b, SIO_UDP_CONNRESET, &report, sizeof(report), nullptr, 0, &bytes, nullptr, nullptr);
 #endif
-    const sockaddr_in a = host_address({options_.lan ? INADDR_ANY : INADDR_LOOPBACK, port});
+    const sockaddr_in a = host_address({static_cast<u32>(options_.lan ? INADDR_ANY : INADDR_LOOPBACK), port});
     std::string error;
     if (::bind(b, reinterpret_cast<const sockaddr*>(&a), sizeof(a)) == 0) {
       socket_ = b;
@@ -1042,9 +1042,9 @@ u32 Network::bind(u32 fd, u32 address, u32 length) {
   if (!s || s->host == kNoSocket) return fail(SSC_EBADF);
   if (length != kGuestAddressSize || a.size() < kGuestAddressSize) return fail(SSC_EFAULT);
   const Endpoint requested = read_address(a.data());
-  Endpoint on{INADDR_LOOPBACK, requested.port};
+  Endpoint on{static_cast<u32>(INADDR_LOOPBACK), requested.port};
   if (const int own = own_cabinet(); link_ && own && is_game_port(requested.port)) {
-    on = {link_->options().lan ? INADDR_ANY : INADDR_LOOPBACK, host_port(link_->options().port, own, requested.port)};
+    on = {static_cast<u32>(link_->options().lan ? INADDR_ANY : INADDR_LOOPBACK), host_port(link_->options().port, own, requested.port)};
     s->link_listener = true;
     s->game_port = requested.port;
 #ifndef _WIN32

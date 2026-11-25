@@ -197,12 +197,35 @@ bool Renderer::init(SDL_Window* window, u32 scale, std::string* error) {
 #ifdef OPENGP_METAL_SHADERS
   formats |= SDL_GPU_SHADERFORMAT_MSL;
 #endif
+#ifdef __ANDROID__
+  // Mobile GPUs: ask only for what the renderer uses (SDL asks for clip
+  // distances, depth clamping, first-instance indirect draws and anisotropy
+  // by default, and fails if the driver lacks one).
+  const SDL_PropertiesID create = SDL_CreateProperties();
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_SHADERS_SPIRV_BOOLEAN, true);
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_DEBUGMODE_BOOLEAN, debug);
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_CLIP_DISTANCE_BOOLEAN, false);
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_DEPTH_CLAMPING_BOOLEAN, false);
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_INDIRECT_DRAW_FIRST_INSTANCE_BOOLEAN, false);
+  SDL_SetBooleanProperty(create, SDL_PROP_GPU_DEVICE_CREATE_FEATURE_ANISOTROPY_BOOLEAN, false);
+  device_ = SDL_CreateGPUDeviceWithProperties(create);
+  SDL_DestroyProperties(create);
+  (void)formats;
+#else
   device_ = SDL_CreateGPUDevice(formats, debug, nullptr);
+#endif
   if (!device_) {
     *error = std::string("could not create a GPU device (Vulkan or Metal is required): ") + SDL_GetError();
     return false;
   }
   msl_ = !(SDL_GetGPUShaderFormats(device_) & SDL_GPU_SHADERFORMAT_SPIRV);
+  {
+    const SDL_PropertiesID props = SDL_GetGPUDeviceProperties(device_);
+    std::fprintf(stderr, "[video] GPU: %s (%s), driver %s %s\n",
+                 SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_NAME_STRING, "?"), SDL_GetGPUDeviceDriver(device_),
+                 SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_DRIVER_NAME_STRING, "?"),
+                 SDL_GetStringProperty(props, SDL_PROP_GPU_DEVICE_DRIVER_VERSION_STRING, ""));
+  }
   if (window) {
     if (!SDL_ClaimWindowForGPUDevice(device_, window)) {
       *error = std::string("could not use the window for rendering: ") + SDL_GetError();

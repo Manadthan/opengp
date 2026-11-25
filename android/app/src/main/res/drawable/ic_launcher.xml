@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A generic launcher icon: a chequered flag on red. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#D62828" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M30,28h48v36h-48z" />
+    <path android:fillColor="#111111"
+        android:pathData="M30,28h12v12h-12zM54,28h12v12h-12zM42,40h12v12h-12zM66,40h12v12h-12zM30,52h12v12h-12zM54,52h12v12h-12z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M27,26h3v58h-3z" />
+</vector>

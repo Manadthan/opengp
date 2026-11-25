@@ -43,4 +43,11 @@ extern const Reboot* g_previous_boot;
 // are passed on.
 [[noreturn]] void restart_process(const std::string& argv0, const std::vector<std::string>& args);
 
+#ifdef __ANDROID__
+// Android: an app cannot start its own executable again. restart_process()
+// hands the arguments to this (set by runtime/app/android.cpp), which asks
+// the app's Java side for a new game process, then ends this one.
+extern std::function<void(const std::vector<std::string>& args)> g_restart_handler;
+#endif
+
 }  // namespace os

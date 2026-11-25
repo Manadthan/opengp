@@ -61,3 +61,8 @@ __pycache__/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Android (android/, scripts/build_android.sh)
+.gradle/
+local.properties
+*.apk

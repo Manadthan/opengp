@@ -29,7 +29,12 @@
 #include <fcntl.h>
 #include <initializer_list>
 #include <unistd.h>
-#if __has_include(<execinfo.h>)
+#if defined(__ANDROID__)
+// Bionic's backtrace() is API 33+: unwind with the compiler's unwinder, and
+// name each frame's library and offset (for ndk-stack / llvm-symbolizer).
+#include <dlfcn.h>
+#include <unwind.h>
+#elif __has_include(<execinfo.h>)
 #include <execinfo.h>
 #define OPENGP_HAVE_BACKTRACE 1
 #endif
@@ -165,8 +170,39 @@ void print_backtrace() {
 
 #else
 
+#ifdef __ANDROID__
+struct UnwindFrames {
+  void* pc[48];
+  int n = 0;
+};
+
+_Unwind_Reason_Code unwind_frame(_Unwind_Context* context, void* arg) {
+  auto* frames = static_cast<UnwindFrames*>(arg);
+  const uintptr_t pc = _Unwind_GetIP(context);
+  if (pc && frames->n < 48) frames->pc[frames->n++] = reinterpret_cast<void*>(pc);
+  return frames->n < 48 ? _URC_NO_REASON : _URC_END_OF_STACK;
+}
+#endif
+
 void print_backtrace() {
-#ifdef OPENGP_HAVE_BACKTRACE
+#ifdef __ANDROID__
+  UnwindFrames frames;
+  _Unwind_Backtrace(unwind_frame, &frames);
+  out("  backtrace:\n");
+  for (int i = 0; i < frames.n; ++i) {
+    Dl_info info{};
+    if (dladdr(frames.pc[i], &info) && info.dli_fname) {
+      const char* lib = std::strrchr(info.dli_fname, '/');
+      out("    #%02d pc %p %s+0x%llx", i, frames.pc[i], lib ? lib + 1 : info.dli_fname,
+          static_cast<unsigned long long>(static_cast<const char*>(frames.pc[i]) -
+                                          static_cast<const char*>(info.dli_fbase)));
+      if (info.dli_sname) out(" (%s)", info.dli_sname);
+      out("\n");
+    } else {
+      out("    #%02d pc %p\n", i, frames.pc[i]);
+    }
+  }
+#elif defined(OPENGP_HAVE_BACKTRACE)
   void* frames[48];
   const int n = backtrace(frames, 48);
   out("  backtrace:\n");

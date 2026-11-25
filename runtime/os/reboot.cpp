@@ -23,6 +23,10 @@
 
 namespace os {
 
+#ifdef __ANDROID__
+std::function<void(const std::vector<std::string>& args)> g_restart_handler;
+#endif
+
 namespace {
 
 constexpr char kMagic[8] = {'O', 'G', 'P', 'R', 'B', 'T', '0', '1'};
@@ -120,6 +124,11 @@ void restart_process([[maybe_unused]] const std::string& argv0, const std::vecto
   CloseHandle(pi.hThread);
   CloseHandle(pi.hProcess);
   std::_Exit(0);
+#elif defined(__ANDROID__)
+  (void)argv0;
+  if (g_restart_handler) g_restart_handler(args);
+  std::fprintf(stderr, "[os] could not restart: no restart handler\n");
+  std::_Exit(1);
 #else
   std::vector<char*> argv;
   argv.push_back(const_cast<char*>(argv0.c_str()));
